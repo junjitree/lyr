@@ -507,6 +507,21 @@ implementation follows meanwhile.
 
 ## Dependency updates that cannot land alone
 
+- **Menus, toasts and the clock panel draw a new size at once, waiting on
+  crcbl.** (2026-11-27.) Branch `fix/panel-size-with-frame` makes
+  `MenuPanel::show`, `Toasts` and `ClockPanel::ask_size` call
+  `Surface::take_size` instead of `Surface::awaiting_size`, for
+  kryptic-sh/crcbl#42: there `set_panel` gives a panel on screen its new size
+  with its next frame, so the old frame is never stretched over the new
+  rectangle (the Bluetooth menu turned off showed its old rows squeezed for a
+  frame on Hyprland 0.56.2). The two land together: with crcbl 0.20 the branch
+  draws into a viewport still at the old size, and with crcbl#42 the old code
+  waits for a `Resized` that never comes. When crcbl#42 is released, move every
+  `crcbl-*` pin to that version with `cargo add`, regenerate `Cargo.lock`, run
+  the gate and open the PR. Verified so far against a local crcbl checkout: fmt,
+  clippy on Linux, Windows and macOS, 709 tests, and a `WAYLAND_DEBUG=1` trace
+  on Hyprland showing the size, viewport and new buffer in one commit.
+
 - **0.7.0 is bumped but not tagged: tag it, or skip to the next cut?**
   (2026-11-05, re-checked 2026-11-17.) **Q:** The commit 0.7.0 describes is
   `build(deps): update crcbl to 0.17.2 and hjkl to 0.45` (be22b4a); its CI run
@@ -1871,6 +1886,13 @@ wayr would be the Linux backend again. Its gaps, read in its source on
   owner uses one.
 
 ## Not yet verified
+
+- **A flaky test in `lyr-bin`, not identified.** (2026-11-27.) Twice the first
+  `cargo test --workspace` after a rebuild reported `lyr-bin` at 137 passed and
+  1 failed, and the run's name for it was lost to a summary filter; every rerun
+  passed (8 runs of the workspace, 15 of `lyr-bin` alone, 3 more after touching
+  sources). Next time it fails, keep the whole log: the `---- name stdout ----`
+  block names it.
 
 - First run on the owner's Hyprland 0.56.2 (Arch, 2026-10-20, Intel RPL-U GPU,
   one 2560 × 1440 output, next to the running waybar): the layer panel reserved

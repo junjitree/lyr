@@ -44,6 +44,13 @@ and this project adheres to
   changes are in its terminal layer, so the config and path crates behave as
   before.
 
+### Fixed
+
+- A menu, toast stack or clock panel changing size no longer shows its old frame
+  stretched over the new size for a frame, which Hyprland did with the Bluetooth
+  menu turned off. lyr draws the new size at once and crcbl hands it to the
+  compositor with that frame.
+
 ## [0.7.0] - 2026-11-05
 
 ### Breaking

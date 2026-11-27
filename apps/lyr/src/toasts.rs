@@ -212,12 +212,13 @@ impl Toasts {
             return self.close(shell);
         }
         if let Some(panel) = &mut self.panel {
-            // The new size comes back as the window's next `Resized`.
+            // Drawn at the new size at once: crcbl gives the window that size
+            // with the frame, and its `Resized` follows.
             if panel.size != size {
                 shell.set_panel(panel.window, logical(size), &panel_desc())?;
                 panel.size = size;
                 if let Some(surface) = &mut panel.surface {
-                    surface.awaiting_size(size);
+                    surface.take_size(size)?;
                 }
             }
             panel.list = list;

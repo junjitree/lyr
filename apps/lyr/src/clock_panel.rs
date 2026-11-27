@@ -423,13 +423,13 @@ impl ClockPanel {
         self.dirty = true;
     }
 
-    /// Asks the window system for the size the panel needs, if that
-    /// changed; the new size comes back as its next `Resized`.
+    /// Gives the panel the size it needs, if that changed: drawn at it at
+    /// once, as crcbl gives the window that size with the frame.
     fn ask_size(&mut self, shell: &mut dyn Shell) -> anyhow::Result<()> {
         if let Some(size) = self.resize_to.take() {
             shell.set_panel(self.window, logical(size), &panel_desc(size, self.place))?;
             if let Some(surface) = &mut self.surface {
-                surface.awaiting_size(size);
+                surface.take_size(size)?;
             }
         }
         Ok(())

@@ -216,6 +216,21 @@ impl Surface {
         Ok(())
     }
 
+    /// Resizes to `size`, in logical pixels, without waiting for the window
+    /// system: for a panel with a size of its own, which crcbl gives the
+    /// window with the next frame presented (`Shell::set_panel`), so the
+    /// compositor never shows the old frame in the new rectangle. Waiting
+    /// for that size, as [`Surface::awaiting_size`] does, would wait for
+    /// ever; the `Resized` that follows the frame changes nothing.
+    ///
+    /// # Errors
+    ///
+    /// When the swapchain cannot be rebuilt.
+    pub fn take_size(&mut self, size: Size) -> Result<(), Error> {
+        let device = |logical: f32| (logical * self.scale).round() as u32;
+        self.resize((device(size.width), device(size.height)), self.scale)
+    }
+
     /// Notes that the window was asked for `size`, in logical pixels
     /// (`Shell::set_panel`): nothing is presented until it comes, through
     /// [`Surface::resize`]. A frame drawn before then would go into the old
@@ -430,6 +445,33 @@ mod tests {
         surface.awaiting_size(logical(taller));
         assert!(surface.frame_due(), "the size it has now");
         assert!(surface.draw(&mut shell, &list).expect("drawn"), "presented");
+
+        surface.destroy().expect("released");
+        shell.destroy_window(window).expect("closed");
+    }
+
+    #[test]
+    fn a_size_taken_is_drawn_at_without_waiting() {
+        let mut shell = HeadlessShell::new();
+        let window = open_window(&mut shell, Duration::ZERO, &WindowDesc::default())
+            .expect("a headless window");
+        let size = wait_for_configure(&mut shell, window, &mut |_| {}).expect("configured");
+        let mut surface = Surface::open_on(&shell, window, size, 1.0, Some(GpuBackend::Null))
+            .expect("a surface on the null backend");
+        let shorter = Size {
+            width: size.0 as f32,
+            height: (size.1 - 40) as f32,
+        };
+
+        surface.take_size(shorter).expect("resized");
+        assert_eq!(surface.size, (size.0, size.1 - 40), "the swapchain's");
+        assert!(surface.frame_due(), "no `Resized` to wait for");
+        assert!(
+            surface
+                .draw(&mut shell, &DrawList::default())
+                .expect("drawn"),
+            "presented at the new size"
+        );
 
         surface.destroy().expect("released");
         shell.destroy_window(window).expect("closed");

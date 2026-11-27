@@ -449,7 +449,8 @@ impl<T: Copy + PartialEq> MenuPanel<T> {
 
     /// Shows `list`, `content` big, with its input `regions`, keeping the
     /// keyboard's place within them, and resizing the window in place if its
-    /// size changed; the new size comes back as its next `Resized`.
+    /// size changed: drawn at the new size at once, which crcbl gives the
+    /// window with that frame.
     pub fn show(
         &mut self,
         shell: &mut dyn Shell,
@@ -462,7 +463,7 @@ impl<T: Copy + PartialEq> MenuPanel<T> {
             shell.set_panel(self.window, logical(size), &panel_desc(size, self.place))?;
             self.size = size;
             if let Some(surface) = &mut self.surface {
-                surface.awaiting_size(size);
+                surface.take_size(size)?;
             }
         }
         self.content = content;
